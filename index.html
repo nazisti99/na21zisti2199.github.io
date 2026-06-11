@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GIF Vault</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ── TOPBAR ── -->
+<div class="topbar">
+    <div class="topbar-left">
+        <h1>🗃️ GIF Vault</h1>
+        <span class="gif-count" id="gifCount">0 items</span>
+    </div>
+    <div class="controls">
+        <div class="search-wrap">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="searchInput" placeholder="Search...">
+        </div>
+        <div class="sort-wrap">
+            <select id="sortSelect">
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="type">By Type</option>
+            </select>
+        </div>
+        <div class="grid-wrap">
+            <span class="grid-icon">⊞</span>
+            <input type="range" id="gridSlider" min="2" max="8" value="4">
+        </div>
+        <button class="btn btn-secondary" id="bulkBtn">☑️ Select</button>
+        <button class="btn btn-primary"   id="importBtn">⬆️ Import</button>
+        <button class="btn btn-secondary" id="exportBtn">⬇️ Export</button>
+        <button class="btn btn-warning"   id="dupeBtn">🔍 Dupes</button>
+        <button class="btn btn-warning"   id="deadBtn">💀 Dead</button>
+        <button class="btn btn-success"   id="zipBtn">📦 ZIP</button>
+        <button class="btn btn-secondary" id="compactModeBtn" title="Dense grid">⊡ Compact</button>
+        <button class="btn btn-primary"   id="slideshowBtn"   title="Slideshow">▶ Slideshow</button>
+        <button class="btn btn-secondary" id="exportHTMLBtn"  title="Export HTML gallery">🌐 Export HTML</button>
+        <button class="btn btn-secondary" id="settingsBtn">⚙️ Settings</button>
+    </div>
+</div>
+
+<!-- ── SETTINGS PANEL ── -->
+<div class="settings-panel hidden" id="settingsPanel">
+    <div class="settings-header">
+        <h2>⚙️ Settings</h2>
+        <button class="settings-close" id="settingsClose">✕</button>
+    </div>
+    <div class="settings-body">
+
+        <div class="settings-section">
+            <div class="settings-section-title">Display</div>
+            <button class="settings-btn" id="settingsLayoutBtn">⊟ Switch to Masonry</button>
+            <button class="settings-btn" id="settingsFitBtn">⛶ Switch to Cropped</button>
+        </div>
+
+        <div class="settings-section">
+            <div class="settings-section-title">Playback</div>
+            <label class="settings-label">Max simultaneous media</label>
+            <input type="number" id="settingsMaxVideos" value="15" min="1" max="100" class="settings-input">
+        </div>
+
+        <div class="settings-section">
+            <div class="settings-section-title">Vault</div>
+            <button class="settings-btn active" id="settingsSaveBtn">💾 Auto-save: ON</button>
+            <button class="settings-btn" id="settingsClearDiscord">🗑️ Clear Discord Media</button>
+            <button class="settings-btn danger" id="settingsClearAll">🗑️ Clear All Vault</button>
+        </div>
+
+        <div class="settings-section">
+            <div class="settings-section-title">Reddit</div>
+            <button class="settings-btn" id="settingsRedditMode">🔄 Reddit Mode: Original (v9)</button>
+        </div>
+
+        <div class="settings-section">
+            <div class="settings-section-title">RedGifs Account (optional)</div>
+            <label class="settings-label">Username</label>
+            <input type="text" id="redgifsUsername" placeholder="RedGifs username..." class="settings-input">
+            <label class="settings-label">Password</label>
+            <input type="password" id="redgifsPassword" placeholder="RedGifs password..." class="settings-input">
+            <button class="settings-btn" id="redgifsLoginBtn">🔑 Login to RedGifs</button>
+            <div class="settings-label" id="redgifsLoginStatus">Not logged in (public API active)</div>
+        </div>
+
+        <div class="settings-section">
+            <div class="settings-section-title">🚫 Global Tag Blacklist</div>
+            <div style="font-size:.74rem;color:var(--muted);margin-bottom:6px;">Applies to Danbooru, Gelbooru, Rule34, Bluesky, RedGifs</div>
+            <div class="blacklist-input-row">
+                <input type="text" id="blacklistInput" placeholder="tag to blacklist..." class="settings-input" style="flex:1;">
+                <button class="btn btn-danger" id="blacklistAddBtn" style="padding:7px 12px;font-size:.8rem;">Add</button>
+            </div>
+            <div class="blacklist-chips" id="blacklistChips"></div>
+        </div>
+
+
+        <div class="settings-section">
+            <div class="settings-section-title">🎨 Accent Colour</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:4px;">
+                <input type="color" id="accentColorPicker" value="#5b6af0" style="width:44px;height:32px;border:none;border-radius:6px;cursor:pointer;padding:0;background:none;">
+                <button class="settings-btn" id="resetAccentBtn" style="margin:0;">↺ Reset</button>
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <div class="settings-section-title">⚡ Cloudflare Worker URL</div>
+            <div style="font-size:.72rem;color:var(--muted);margin-bottom:6px;">Deploy <b>cloudflare-worker.js</b> to your free Cloudflare account. Paste the worker URL below to fix CORS on RedGifs, Kemono, etc.</div>
+            <input type="text" id="cfWorkerInput" placeholder="https://my-proxy.username.workers.dev" class="settings-input">
+            <button class="settings-btn" id="cfWorkerSaveBtn">💾 Save Worker URL</button>
+            <div class="settings-label" id="cfWorkerStatus"></div>
+        </div>
+
+        <div class="settings-section">
+            <div class="settings-section-title">🔐 Nijie Credentials</div>
+            <div style="font-size:.72rem;color:var(--muted);margin-bottom:6px;">Enter in the Nijie tab login fields. Credentials are never stored in code.</div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ── TABS ── -->
+<div class="tab-bar">
+    <button class="tab-btn active" data-tab="vault">🗃️ Vault</button>
+    <button class="tab-btn"        data-tab="reddit">🟠 Reddit</button>
+    <button class="tab-btn"        data-tab="danbooru">🟣 Danbooru</button>
+    <button class="tab-btn"        data-tab="gelbooru">💚 Gelbooru</button>
+    <button class="tab-btn"        data-tab="rule34">❤️ Rule34</button>
+    <button class="tab-btn"        data-tab="bluesky">🦋 Bluesky</button>
+    <button class="tab-btn"        data-tab="redgifs">🔴 RedGifs</button>
+    <button class="tab-btn"        data-tab="kemono">🟤 Kemono</button>
+    <button class="tab-btn"        data-tab="coomer">🔵 Coomer</button>
+    <button class="tab-btn"        data-tab="nijie">⛩️ Nijie</button>
+</div>
+
+<!-- ── FILTER BAR (vault only) ── -->
+<div class="filter-bar" id="filterBar">
+    <button class="filter-btn active" data-filter="all">All</button>
+    <button class="filter-btn" data-filter="gif">GIF</button>
+    <button class="filter-btn" data-filter="webm">WEBM</button>
+    <button class="filter-btn" data-filter="mp4">MP4</button>
+    <button class="filter-btn" data-filter="webp">WEBP</button>
+    <button class="filter-btn" data-filter="png">PNG</button>
+    <button class="filter-btn" data-filter="jpg">JPG</button>
+    <button class="filter-btn" data-filter="other">Other</button>
+</div>
+
+<!-- ── STATS BAR ── -->
+<div class="stats-bar" id="statsBar">
+    <span id="statGif">GIF: 0</span>
+    <span id="statWebm">WEBM: 0</span>
+    <span id="statMp4">MP4: 0</span>
+    <span id="statOther">Other: 0</span>
+    <span id="statVisible">Showing: 0 / 0</span>
+    <span id="statDead" class="hidden">💀 Dead: 0</span>
+    <span class="broadcast-status" id="broadcastStatus">📡 Listening</span>
+</div>
+
+<!-- ── BULK TOOLBAR ── -->
+<div class="bulk-toolbar hidden" id="bulkToolbar">
+    <span id="bulkCount">0 selected</span>
+    <button class="btn btn-secondary" id="bulkSelectAll">Select All</button>
+    <button class="btn btn-secondary" id="bulkExport">Export Selected</button>
+    <button class="btn btn-danger"    id="bulkDelete">Delete Selected</button>
+    <button class="btn btn-secondary" id="bulkCancel">Cancel</button>
+</div>
+
+<!-- ── PROGRESS BAR ── -->
+<div class="progress-bar-wrap hidden" id="progressWrap">
+    <div class="progress-bar" id="progressBar"></div>
+    <span class="progress-label" id="progressLabel">0%</span>
+</div>
+
+<!-- ── INCOMING TRAY ── -->
+<div class="incoming-tray hidden" id="incomingTray">
+    <div class="incoming-header">
+        <span id="incomingTitle">📡 0 items incoming</span>
+        <div class="incoming-actions">
+            <button class="btn btn-success"   id="incomingAccept">✅ Add All</button>
+            <button class="btn btn-secondary" id="incomingTogglePreview">👁️ Preview</button>
+            <button class="btn btn-danger"    id="incomingReject">✕ Dismiss</button>
+        </div>
+    </div>
+    <div class="incoming-preview-row" id="incomingPreviewRow"></div>
+</div>
+
+<!-- ══════════════════════════════════════════════ -->
+<!-- VAULT TAB                                      -->
+<!-- ══════════════════════════════════════════════ -->
+<div class="tab-content active" id="tab-vault">
+    <div class="gallery grid-layout" id="gallery"></div>
+    <div class="load-more-wrap hidden" id="loadMoreWrap">
+        <button class="btn btn-primary" id="loadMoreBtn">Load More</button>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════ -->
+<!-- REDDIT TAB                                     -->
+<!-- ══════════════════════════════════════════════ -->
+<div class="tab-content" id="tab-reddit">
+    <div class="reddit-controls">
+        <div class="reddit-input-row">
+            <span class="reddit-prefix">r/</span>
+            <input type="text" id="subredditInput" placeholder="subreddit name...">
+            <select id="redditSort">
+                <option value="hot">Hot</option>
+                <option value="new">New</option>
+                <option value="top">Top</option>
+                <option value="rising">Rising</option>
+            </select>
+            <select id="redditFilter">
+                <option value="all">All Media</option>
+                <option value="gif">GIF / Animated</option>
+                <option value="mp4">MP4 / Video</option>
+                <option value="webm">WEBM</option>
+                <option value="webp">WEBP</option>
+                <option value="img">Images (jpg/png)</option>
+                <option value="long30">⏱ 30s+</option>
+            </select>
+            <button class="btn btn-primary"   id="redditLoadBtn">Load</button>
+            <button class="btn btn-danger"    id="redditClearBtn">Clear</button>
+            <button class="btn btn-secondary" id="redditAddBtn">+ Save Sub</button>
+        </div>
+        <div class="saved-subs" id="savedSubs"></div>
+        <div class="reddit-stats hidden" id="redditStats">
+            <span id="redditStatSub"></span>
+            <span id="redditStatCount">0 loaded</span>
+            <span id="redditStatAdded">0 added to vault</span>
+        </div>
+    </div>
+
+    <div class="reddit-view-toggle">
+        <button class="view-btn active" id="viewMasonry">⊟ Masonry</button>
+        <button class="view-btn"        id="viewGrid">⊞ Grid</button>
+    </div>
+
+    <div class="gallery reddit-gallery masonry-mode" id="redditGallery"></div>
+
+    <div class="load-more-wrap hidden" id="redditLoadMoreWrap">
+        <div class="reddit-loading" id="redditLoading" style="display:none;">
+            <div class="spinner"></div>
+            <span>Loading more...</span>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════ -->
+<!-- DANBOORU TAB                                   -->
+<!-- ══════════════════════════════════════════════ -->
+<div class="tab-content" id="tab-danbooru">
+    <div class="booru-controls">
+        <div class="booru-header">
+            <span class="booru-logo danbooru-logo">🟣 Danbooru</span>
+            <div class="booru-input-row">
+                <input type="text" id="danbooruTags" placeholder="tags... (e.g. animated solo)">
+                <select id="danbooruSort">
+                    <option value="score_desc">⭐ Top Score</option>
+                    <option value="date_desc">🕒 Newest</option>
+                    <option value="date_asc">🕒 Oldest</option>
+                    <option value="score_asc">⭐ Score Asc</option>
+                    <option value="popular">🔥 Popular</option>
+                    <option value="random">🎲 Random</option>
+                </select>
+                <select id="danbooruRating">
+                    <option value="all">All Ratings</option>
+                    <option value="g">Safe (G)</option>
+                    <option value="s">Sensitive (S)</option>
+                    <option value="q">Questionable</option>
+                    <option value="e">Explicit</option>
+                </select>
+                <select id="danbooruFilter">
+                    <option value="all">All Types</option>
+                    <option value="gif">GIF</option>
+                    <option value="webm">WEBM</option>
+                    <option value="mp4">MP4</option>
+                    <option value="video">Video (all)</option>
+                    <option value="png">PNG</option>
+                    <option value="jpg">JPG</option>
+                    <option value="webp">WEBP</option>
+                    <option value="image">Images (all)</option>
+                </select>
+                <button class="btn btn-primary"  id="danbooruLoadBtn">Search</button>
+                <button class="btn btn-danger"   id="danbooruClearBtn">Clear</button>
+                <input type="number" id="danbooruLimit" min="1" max="200" value="20" title="Items per fetch" style="width:58px;padding:4px 6px;text-align:center;border-radius:6px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:0.82rem;">
+        <button class="btn btn-success"  id="danbooruSaveAllBtn">💾 Save All</button>
+            </div>
+        </div>
+        <div class="booru-stats" id="danbooruStats">
+            <span id="danbooruStatCount">0 loaded</span>
+        </div>
+    </div>
+    <div class="gallery booru-gallery masonry-mode" id="danbooruGallery"></div>
+    <div class="load-more-wrap hidden" id="danbooruLoadMore">
+        <div class="reddit-loading" id="danbooruLoading" style="display:none;">
+            <div class="spinner"></div><span>Loading...</span>
+        </div>
+        <button class="btn btn-primary" id="danbooruLoadMoreBtn" style="display:none;">Load More</button>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════ -->
+<!-- GELBOORU TAB                                   -->
+<!-- ══════════════════════════════════════════════ -->
+<div class="tab-content" id="tab-gelbooru">
+    <div class="booru-controls">
+        <div class="booru-header">
+            <span class="booru-logo gelbooru-logo">💚 Gelbooru</span>
+            <div class="booru-input-row">
+                <input type="text" id="gelbooruTags" placeholder="tags... (e.g. animated rating:explicit)">
+                <select id="gelbooruSort">
+                    <option value="score_desc">⭐ Top Score</option>
+                    <option value="date_desc">🕒 Newest</option>
+                    <option value="date_asc">🕒 Oldest</option>
+                    <option value="score_asc">⭐ Score Asc</option>
+                    <option value="popular">🔥 Popular</option>
+                    <option value="random">🎲 Random</option>
+                </select>
+                <select id="gelbooruRating">
+                    <option value="all">All Ratings</option>
+                    <option value="general">Safe / General</option>
+                    <option value="sensitive">Sensitive</option>
+                    <option value="questionable">Questionable</option>
+                    <option value="explicit">Explicit</option>
+                </select>
+                <select id="gelbooruFilter">
+                    <option value="all">All Types</option>
+                    <option value="gif">GIF</option>
+                    <option value="webm">WEBM</option>
+                    <option value="mp4">MP4</option>
+                    <option value="video">Video (all)</option>
+                    <option value="png">PNG</option>
+                    <option value="jpg">JPG</option>
+                    <option value="webp">WEBP</option>
+                    <option value="image">Images (all)</option>
+                </select>
+                <button class="btn btn-primary" id="gelbooruLoadBtn">Search</button>
+                <button class="btn btn-danger"  id="gelbooruClearBtn">Clear</button>
+                <input type="number" id="gelbooruLimit" min="1" max="200" value="20" title="Items per fetch" style="width:58px;padding:4px 6px;text-align:center;border-radius:6px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:0.82rem;">
+        <button class="btn btn-success" id="gelbooruSaveAllBtn">💾 Save All</button>
+            </div>
+        </div>
+        <div class="booru-stats" id="gelbooruStats">
+            <span id="gelbooruStatCount">0 loaded</span>
+        </div>
+    </div>
+    <div class="gallery booru-gallery masonry-mode" id="gelbooruGallery"></div>
+    <div class="load-more-wrap hidden" id="gelbooruLoadMore">
+        <div class="reddit-loading" id="gelbooruLoading" style="display:none;">
+            <div class="spinner"></div><span>Loading...</span>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════ -->
+<!-- RULE34 TAB                                     -->
+<!-- ══════════════════════════════════════════════ -->
+<div class="tab-content" id="tab-rule34">
+    <div class="booru-controls">
+        <div class="booru-header">
+            <span class="booru-logo rule34-logo">❤️ Rule34</span>
+            <div class="booru-input-row">
+                <input type="text" id="rule34Tags" placeholder="tags... (e.g. animated female)">
+                <select id="rule34Sort">
+                    <option value="score_desc">⭐ Top Score</option>
+                    <option value="date_desc">🕒 Newest</option>
+                    <option value="date_asc">🕒 Oldest</option>
+                    <option value="score_asc">⭐ Score Asc</option>
+                    <option value="popular">🔥 Popular</option>
+                    <option value="random">🎲 Random</option>
+                </select>
+                <select id="rule34Rating">
+                    <option value="all">All Ratings</option>
+                    <option value="safe">Safe</option>
+                    <option value="questionable">Questionable</option>
+                    <option value="explicit">Explicit</option>
+                </select>
+                <select id="rule34Filter">
+                    <option value="all">All Types</option>
+                    <option value="gif">GIF</option>
+                    <option value="webm">WEBM</option>
+                    <option value="mp4">MP4</option>
+                    <option value="video">Video (all)</option>
+                    <option value="png">PNG</option>
+                    <option value="jpg">JPG</option>
+                    <option value="webp">WEBP</option>
+                    <option value="image">Images (all)</option>
+                </select>
+                <button class="btn btn-primary" id="rule34LoadBtn">Search</button>
+                <button class="btn btn-danger"  id="rule34ClearBtn">Clear</button>
+                <input type="number" id="rule34Limit" min="1" max="200" value="20" title="Items per fetch" style="width:58px;padding:4px 6px;text-align:center;border-radius:6px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:0.82rem;">
+        <button class="btn btn-success" id="rule34SaveAllBtn">💾 Save All</button>
+            </div>
+        </div>
+        <div class="booru-stats" id="rule34Stats">
+            <span id="rule34StatCount">0 loaded</span>
+        </div>
+    </div>
+    <div class="gallery booru-gallery masonry-mode" id="rule34Gallery"></div>
+    <div class="load-more-wrap hidden" id="rule34LoadMore">
+        <div class="reddit-loading" id="rule34Loading" style="display:none;">
+            <div class="spinner"></div><span>Loading...</span>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════ -->
+<!-- BLUESKY TAB                                    -->
+<!-- ══════════════════════════════════════════════ -->
+<div class="tab-content" id="tab-bluesky">
+    <div class="booru-controls">
+        <div class="booru-header">
+            <span class="booru-logo bsky-logo">🦋 Bluesky</span>
+            <div class="booru-input-row">
+                <input type="text" id="bskyQuery" placeholder="keyword or #hashtag...">
+                <select id="bskyFilter">
+                    <option value="all">All Media</option>
+                    <option value="gif">GIF</option>
+                    <option value="mp4">MP4 / Video</option>
+                    <option value="image">Images</option>
+                </select>
+                <button class="btn btn-primary" id="bskyLoadBtn">Search</button>
+                <button class="btn btn-danger"  id="bskyClearBtn">Clear</button>
+                <input type="number" id="bskyLimit" min="1" max="200" value="20" title="Items per fetch" style="width:58px;padding:4px 6px;text-align:center;border-radius:6px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:0.82rem;">
+        <button class="btn btn-success" id="bskySaveAllBtn">💾 Save All</button>
+            </div>
+        </div>
+        <div class="booru-stats" id="bskyStats" style="display:none;">
+            <span id="bskyStatCount">0 loaded</span>
+        </div>
+    </div>
+    <div class="gallery booru-gallery masonry-mode" id="bskyGallery"></div>
+    <div class="load-more-wrap hidden" id="bskyLoadMore">
+        <div class="reddit-loading" id="bskyLoading" style="display:none;">
+            <div class="spinner"></div><span>Loading...</span>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════ -->
+<!-- REDGIFS TAB                                    -->
+<!-- ══════════════════════════════════════════════ -->
+<div class="tab-content" id="tab-redgifs">
+    <div class="booru-controls">
+        <div class="booru-header">
+            <span class="booru-logo redgifs-logo">🔴 RedGifs</span>
+            <div class="booru-input-row">
+                <input type="text" id="redgifsQuery" placeholder="search tags or keywords...">
+                <select id="redgifsSort">
+                    <option value="trending">🔥 Trending</option>
+                    <option value="top">⭐ Top</option>
+                    <option value="latest">🕒 Latest</option>
+                    <option value="oldest">🕒 Oldest</option>
+                    <option value="views">👁️ Most Viewed</option>
+                    <option value="likes">❤️ Most Liked</option>
+                </select>
+                <select id="redgifsFilter">
+                    <option value="all">All</option>
+                    <option value="gif">GIF</option>
+                    <option value="mp4">MP4</option>
+                    <option value="webm">WEBM</option>
+                </select>
+                <button class="btn btn-primary" id="redgifsLoadBtn">Search</button>
+                <button class="btn btn-danger"  id="redgifsClearBtn">Clear</button>
+                <input type="number" id="redgifsLimit" min="1" max="200" value="20" title="Items per fetch" style="width:58px;padding:4px 6px;text-align:center;border-radius:6px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:0.82rem;">
+        <button class="btn btn-success" id="redgifsSaveAllBtn">💾 Save All</button>
+            </div>
+        </div>
+        <div class="booru-stats" id="redgifsStats" style="display:none;">
+            <span id="redgifsStatCount">0 loaded</span>
+        </div>
+    </div>
+    <div class="gallery booru-gallery masonry-mode" id="redgifsGallery"></div>
+    <div class="load-more-wrap hidden" id="redgifsLoadMore">
+        <div class="reddit-loading" id="redgifsLoading" style="display:none;">
+            <div class="spinner"></div><span>Loading...</span>
+        </div>
+    </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════ -->
+<!-- KEMONO.CR TAB                                  -->
+<!-- ══════════════════════════════════════════════ -->
+<div class="tab-content" id="tab-kemono">
+    <div class="booru-controls">
+        <div class="booru-header">
+            <span class="booru-logo" style="background:linear-gradient(135deg,#8B4513,#A0522D);color:#fff;padding:4px 10px;border-radius:8px;font-weight:700;">🟤 Kemono.cr</span>
+            <div class="booru-input-row" style="flex-wrap:wrap;gap:6px;margin-top:6px;">
+                <input type="text" id="kemonoQuery" placeholder="creator name, tags…" style="flex:1;min-width:140px;">
+                <select id="kemonoService" style="padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg2);color:var(--text);">
+                    <option value="">All Services</option>
+                    <option value="patreon">Patreon</option>
+                    <option value="fanbox">Fanbox</option>
+                    <option value="gumroad">Gumroad</option>
+                    <option value="subscribestar">SubscribeStar</option>
+                    <option value="fantia">Fantia</option>
+                    <option value="boosty">Boosty</option>
+                    <option value="dlsite">DLsite</option>
+                </select>
+                <select id="kemonoFilter" style="padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg2);color:var(--text);">
+                    <option value="all">All Types</option>
+                    <option value="image">Images</option>
+                    <option value="video">Videos</option>
+                    <option value="gif">GIFs</option>
+                </select>
+                <button class="btn btn-primary" id="kemonoLoadBtn">Search</button>
+                <button class="btn btn-danger"  id="kemonomClearBtn">Clear</button>
+                <input type="number" id="kemonoLimit" min="1" max="200" value="20" title="Items per fetch" style="width:58px;padding:4px 6px;text-align:center;border-radius:6px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:0.82rem;">
+                <button class="btn btn-success" id="kemonoSaveAllBtn">💾 Save All</button>
+            </div>
+        </div>
+    </div>
+    <div class="gallery booru-gallery masonry-mode" id="kemonoGallery"></div>
+    <div class="load-more-wrap hidden" id="kemonoLoadMore">
+        <div class="reddit-loading" id="kemonoLoading" style="display:none;"><div class="spinner"></div><span>Loading…</span></div>
+        <button class="btn btn-outline load-more-btn" id="kemonoLoadMoreBtn">Load More</button>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════ -->
+<!-- COOMER.ST TAB                                  -->
+<!-- ══════════════════════════════════════════════ -->
+<div class="tab-content" id="tab-coomer">
+    <div class="booru-controls">
+        <div class="booru-header">
+            <span class="booru-logo" style="background:linear-gradient(135deg,#1565c0,#1976d2);color:#fff;padding:4px 10px;border-radius:8px;font-weight:700;">🔵 Coomer.st</span>
+            <div class="booru-input-row" style="flex-wrap:wrap;gap:6px;margin-top:6px;">
+                <input type="text" id="coomerQuery" placeholder="creator name…" style="flex:1;min-width:140px;">
+                <select id="coomerService" style="padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg2);color:var(--text);">
+                    <option value="">All Services</option>
+                    <option value="onlyfans">OnlyFans</option>
+                    <option value="fansly">Fansly</option>
+                    <option value="candfans">CandFans</option>
+                </select>
+                <select id="coomerFilter" style="padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg2);color:var(--text);">
+                    <option value="all">All Types</option>
+                    <option value="image">Images</option>
+                    <option value="video">Videos</option>
+                    <option value="gif">GIFs</option>
+                </select>
+                <button class="btn btn-primary" id="coomerLoadBtn">Search</button>
+                <button class="btn btn-danger"  id="coomerClearBtn">Clear</button>
+                <input type="number" id="coomerLimit" min="1" max="200" value="20" title="Items per fetch" style="width:58px;padding:4px 6px;text-align:center;border-radius:6px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:0.82rem;">
+                <button class="btn btn-success" id="coomerSaveAllBtn">💾 Save All</button>
+            </div>
+        </div>
+    </div>
+    <div class="gallery booru-gallery masonry-mode" id="coomerGallery"></div>
+    <div class="load-more-wrap hidden" id="coomerLoadMore">
+        <div class="reddit-loading" id="coomerLoading" style="display:none;"><div class="spinner"></div><span>Loading…</span></div>
+        <button class="btn btn-outline load-more-btn" id="coomerLoadMoreBtn">Load More</button>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════ -->
+<!-- NIJIE.INFO TAB                                 -->
+<!-- ══════════════════════════════════════════════ -->
+<div class="tab-content" id="tab-nijie">
+    <div class="booru-controls">
+        <div class="booru-header">
+            <span class="booru-logo" style="background:linear-gradient(135deg,#b71c1c,#c62828);color:#fff;padding:4px 10px;border-radius:8px;font-weight:700;">⛩️ Nijie.info</span>
+            <div class="booru-input-row" style="flex-wrap:wrap;gap:6px;margin-top:6px;">
+                <input type="text"     id="nijieEmail"    placeholder="email…"    style="width:160px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg2);color:var(--text);">
+                <input type="password" id="nijiePassword" placeholder="password…" style="width:130px;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg2);color:var(--text);">
+                <button class="btn btn-warning" id="nijieLoginBtn">🔑 Login</button>
+            </div>
+            <div class="booru-input-row" style="flex-wrap:wrap;gap:6px;margin-top:6px;">
+                <input type="text" id="nijieQuery" placeholder="search tags…" style="flex:1;min-width:140px;">
+                <select id="nijieFilter" style="padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg2);color:var(--text);">
+                    <option value="all">All Types</option>
+                    <option value="image">Images</option>
+                    <option value="video">Videos</option>
+                    <option value="gif">GIFs</option>
+                </select>
+                <button class="btn btn-primary" id="nijieLoadBtn">Search</button>
+                <button class="btn btn-danger"  id="nijieClearBtn">Clear</button>
+                <input type="number" id="nijieLimit" min="1" max="200" value="20" title="Items per fetch" style="width:58px;padding:4px 6px;text-align:center;border-radius:6px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:0.82rem;">
+                <button class="btn btn-success" id="nijieSaveAllBtn">💾 Save All</button>
+            </div>
+            <div style="font-size:.72rem;color:var(--muted);margin-top:4px;padding:0 4px;">⚠️ Nijie requires login. CORS blocks hosted pages — set a Cloudflare Worker URL in Settings or run locally for full support.</div>
+        </div>
+    </div>
+    <div class="gallery booru-gallery masonry-mode" id="nijieGallery"></div>
+    <div class="load-more-wrap hidden" id="nijieLoadMore">
+        <div class="reddit-loading" id="nijieLoading" style="display:none;"><div class="spinner"></div><span>Loading…</span></div>
+        <button class="btn btn-outline load-more-btn" id="nijieLoadMoreBtn">Load More</button>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════ -->
+<!-- MODALS                                         -->
+<!-- ══════════════════════════════════════════════ -->
+
+<!-- Vault GIF Modal -->
+<div class="modal hidden" id="modal">
+    <div class="modal-backdrop" id="modalBackdrop"></div>
+    <div class="modal-content">
+        <div class="modal-toolbar">
+            <button class="modal-btn" id="modalPrev">◀ Prev</button>
+            <span class="modal-index" id="modalIndex">1 / 1</span>
+            <button class="modal-btn" id="modalNext">Next ▶</button>
+        </div>
+        <img id="modalImg" alt="preview">
+        <div class="modal-actions">
+            <button class="modal-btn" id="modalOpen">🔗 Open</button>
+            <button class="modal-btn" id="modalCopy">📋 Copy URL</button>
+            <button class="modal-btn" id="modalDownload">⬇️ Download</button>
+            <button class="modal-btn" id="modalAddTag">🏷️ Tag</button>
+            <button class="modal-btn btn-danger" id="modalDelete">🗑️ Remove</button>
+        </div>
+        <div class="modal-tags" id="modalTags"></div>
+        <button class="modal-close" id="modalClose">✕</button>
+    </div>
+</div>
+
+<!-- Universal Media Modal (Booru / Bluesky / RedGifs) -->
+<div class="modal hidden" id="universalModal">
+    <div class="modal-backdrop" id="uModalBackdrop"></div>
+    <div class="modal-content">
+        <div class="modal-toolbar">
+            <button class="modal-btn" id="uModalPrev">◀ Prev</button>
+            <span class="modal-index" id="uModalIndexEl">1 / 1</span>
+            <button class="modal-btn" id="uModalNext">Next ▶</button>
+        </div>
+        <img id="uModalImg" alt="preview" style="display:none;">
+        <video id="uModalVid" controls loop muted playsinline style="display:none;max-width:80vw;max-height:62vh;border-radius:14px;background:var(--bg3);"></video>
+        <div class="modal-actions">
+            <button class="modal-btn" id="uModalOpen">🔗 Open</button>
+            <button class="modal-btn" id="uModalCopy">📋 Copy URL</button>
+            <button class="modal-btn" id="uModalDownload">⬇️ Download</button>
+            <button class="modal-btn btn-success" id="uModalSave">💾 Save to Vault</button>
+        </div>
+        <div class="modal-tags" id="uModalTags"></div>
+        <button class="modal-close" id="uModalClose">✕</button>
+    </div>
+</div>
+
+<!-- Tag Modal -->
+<div class="tag-modal hidden" id="tagModal">
+    <div class="tag-modal-content">
+        <h2>🏷️ Manage Tags</h2>
+        <div class="tag-input-row">
+            <input type="text" id="tagInput" placeholder="Add tag...">
+            <button class="btn btn-primary" id="tagAddBtn">Add</button>
+        </div>
+        <div class="tag-list" id="tagList"></div>
+        <div class="tag-collection-section">
+            <h3>Collections</h3>
+            <div class="collection-list" id="collectionList"></div>
+            <div class="tag-input-row">
+                <input type="text" id="collectionInput" placeholder="New collection name...">
+                <button class="btn btn-primary" id="collectionAddBtn">Create</button>
+            </div>
+        </div>
+        <button class="btn btn-secondary" id="tagCloseBtn">Done</button>
+    </div>
+</div>
+
+<!-- Import Modal -->
+<div class="import-modal hidden" id="importModal">
+    <div class="import-modal-content">
+        <h2>⬆️ Import</h2>
+        <p>Paste your Discord settings JSON or a plain URL list.</p>
+        <textarea id="importTextarea" placeholder='{"settings": "base64..."}' spellcheck="false"></textarea>
+        <div class="import-info" id="importInfo"></div>
+        <div class="import-actions">
+            <button class="btn btn-secondary" id="importCancelBtn">Cancel</button>
+            <button class="btn btn-primary"   id="importConfirmBtn">Import</button>
+        </div>
+    </div>
+</div>
+
+<!-- Vault Context Menu -->
+<div class="context-menu hidden" id="contextMenu">
+    <button class="ctx-item"        id="ctxView">👁️ View</button>
+    <button class="ctx-item"        id="ctxCopy">📋 Copy URL</button>
+    <button class="ctx-item"        id="ctxDownload">⬇️ Download</button>
+    <button class="ctx-item"        id="ctxTag">🏷️ Tag</button>
+    <button class="ctx-item"        id="ctxSelect">☑️ Select</button>
+    <button class="ctx-item danger" id="ctxDelete">🗑️ Delete</button>
+</div>
+
+<!-- Reddit Context Menu -->
+<div class="context-menu hidden" id="redditContextMenu">
+    <button class="ctx-item" data-reddit-ctx="open">🔗 Open</button>
+    <button class="ctx-item" data-reddit-ctx="copy">📋 Copy URL</button>
+    <button class="ctx-item" data-reddit-ctx="save">💾 Save to Vault</button>
+</div>
+
+<!-- Booru Context Menu -->
+<div class="context-menu hidden" id="booruContextMenu">
+    <button class="ctx-item" data-booru-ctx="open">🔗 Open</button>
+    <button class="ctx-item" data-booru-ctx="copy">📋 Copy URL</button>
+    <button class="ctx-item" data-booru-ctx="save">💾 Save to Vault</button>
+    <button class="ctx-item" data-booru-ctx="blacklist-tag">🚫 Blacklist Tag</button>
+</div>
+
+<!-- Bluesky Context Menu -->
+<div class="context-menu hidden" id="bskyContextMenu">
+    <button class="ctx-item" data-bsky-ctx="open">🔗 Open Media</button>
+    <button class="ctx-item" data-bsky-ctx="open-post">🦋 Open Post</button>
+    <button class="ctx-item" data-bsky-ctx="copy">📋 Copy URL</button>
+    <button class="ctx-item" data-bsky-ctx="save">💾 Save to Vault</button>
+    <button class="ctx-item" data-bsky-ctx="blacklist">🚫 Blacklist Author</button>
+</div>
+
+<!-- RedGifs Context Menu -->
+<div class="context-menu hidden" id="redgifsContextMenu">
+    <button class="ctx-item" data-redgifs-ctx="open">🔗 Open</button>
+    <button class="ctx-item" data-redgifs-ctx="copy">📋 Copy URL</button>
+    <button class="ctx-item" data-redgifs-ctx="save">💾 Save to Vault</button>
+    <button class="ctx-item" data-redgifs-ctx="blacklist-tag">🚫 Blacklist Tag</button>
+</div>
+
+<!-- Shortcuts Panel -->
+<div class="shortcuts-panel hidden" id="shortcutsPanel">
+    <div class="shortcuts-content">
+        <h2>⌨️ Keyboard Shortcuts</h2>
+        <div class="shortcut-list">
+            <div class="shortcut-row"><kbd>/</kbd><span>Focus search</span></div>
+            <div class="shortcut-row"><kbd>Esc</kbd><span>Close modal</span></div>
+            <div class="shortcut-row"><kbd>←</kbd><span>Previous (modal)</span></div>
+            <div class="shortcut-row"><kbd>→</kbd><span>Next (modal)</span></div>
+            <div class="shortcut-row"><kbd>D</kbd><span>Delete (modal)</span></div>
+            <div class="shortcut-row"><kbd>C</kbd><span>Copy URL (modal)</span></div>
+            <div class="shortcut-row"><kbd>T</kbd><span>Tag (modal)</span></div>
+            <div class="shortcut-row"><kbd>S</kbd><span>Save to Vault (universal modal)</span></div>
+            <div class="shortcut-row"><kbd>?</kbd><span>Toggle shortcuts</span></div>
+        </div>
+        <button class="btn btn-secondary" id="shortcutsClose">Close</button>
+    </div>
+</div>
+
+<button class="shortcuts-fab" id="shortcutsFab">?</button>
+<div class="toast hidden" id="toast"></div>
+
+
+<!-- ══ SLIDESHOW OVERLAY ══ -->
+<div class="hidden" id="slideshowOverlay" style="position:fixed;inset:0;background:rgba(0,0,0,.97);z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;">
+    <div style="position:fixed;top:0;left:0;right:0;height:3px;background:rgba(255,255,255,.1);">
+        <div id="slideshowProg" style="height:100%;background:var(--accent);width:0%;"></div>
+    </div>
+    <div id="slideshowMedia" style="display:flex;align-items:center;justify-content:center;width:100%;padding:12px 16px 70px;max-height:90vh;overflow:hidden;"></div>
+    <div style="position:fixed;bottom:0;left:0;right:0;padding:10px 16px;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;">
+        <button id="slideshowClose"     class="btn btn-danger"    style="min-width:70px;">✕ Exit</button>
+        <button id="slideshowPrev"      class="btn btn-secondary" style="min-width:42px;">◀</button>
+        <button id="slideshowPlayPause" class="btn btn-primary"   style="min-width:90px;">⏸ Pause</button>
+        <button id="slideshowNext"      class="btn btn-secondary" style="min-width:42px;">▶</button>
+        <select id="slideshowDelay" style="padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg2);color:var(--text);">
+            <option value="2">2 s</option>
+            <option value="4" selected>4 s</option>
+            <option value="7">7 s</option>
+            <option value="15">15 s</option>
+        </select>
+        <span id="slideshowCounter" style="color:#aaa;font-size:.82rem;min-width:64px;text-align:center;"></span>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/dist/fuse.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
