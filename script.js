@@ -461,6 +461,9 @@ function getAllGifs() {
 }
 function addGifsToDB(urls, origin = null) {
     return new Promise(async resolve => {
+        if (!db) { console.error("[addGifsToDB] DB not open yet"); resolve(0); return; }
+        // Strip tracking params from URLs before storing
+        urls = urls.map(u => { try { return stripTracking(u); } catch { return u; } });
         let added = 0;
         const CHUNK = 200, total = urls.length;
         for (let i = 0; i < total; i += CHUNK) {
@@ -1352,18 +1355,18 @@ function showBooruContextMenu(e,data) { booruCtxTarget=data; const menu=el("boor
 function initBooruControls() {
     // Danbooru
     el("danbooruLoadBtn")?.addEventListener("click",()=>loadDanbooru(true));
-    el("danbooruClearBtn")?.addEventListener("click",()=>{ const g=el("danbooruGallery"); if(g){g.querySelectorAll("video,img").forEach(e2=>mediaObserver.unobserve(e2));g.innerHTML="";} booruState.danbooru=makeBooruState(); booruModalItems.danbooru=[]; el("danbooruLoadMore")?.classList.add("hidden"); showToast("Danbooru cleared","info"); });
+    el("danbooruClearBtn")?.addEventListener("click",()=>{ const g=el("danbooruGallery"); if(g){g.querySelectorAll("video,img,iframe").forEach(e2=>mediaObserver.unobserve(e2));g.innerHTML="";} booruState.danbooru=makeBooruState(); booruModalItems.danbooru=[]; el("danbooruLoadMore")?.classList.add("hidden"); showToast("Danbooru cleared","info"); });
     el("danbooruTags")?.addEventListener("keydown",e=>{ if(e.key==="Enter")loadDanbooru(true); });
     el("danbooruLoadMoreBtn")?.addEventListener("click",()=>loadDanbooru(false));
 
     // Gelbooru
     el("gelbooruLoadBtn")?.addEventListener("click",()=>loadGelbooru(true));
-    el("gelbooruClearBtn")?.addEventListener("click",()=>{ const g=el("gelbooruGallery"); if(g){g.querySelectorAll("video,img").forEach(e2=>mediaObserver.unobserve(e2));g.innerHTML="";} booruState.gelbooru=makeBooruState(); booruModalItems.gelbooru=[]; el("gelbooruLoadMore")?.classList.add("hidden"); showToast("Gelbooru cleared","info"); });
+    el("gelbooruClearBtn")?.addEventListener("click",()=>{ const g=el("gelbooruGallery"); if(g){g.querySelectorAll("video,img,iframe").forEach(e2=>mediaObserver.unobserve(e2));g.innerHTML="";} booruState.gelbooru=makeBooruState(); booruModalItems.gelbooru=[]; el("gelbooruLoadMore")?.classList.add("hidden"); showToast("Gelbooru cleared","info"); });
     el("gelbooruTags")?.addEventListener("keydown",e=>{ if(e.key==="Enter")loadGelbooru(true); });
 
     // Rule34
     el("rule34LoadBtn")?.addEventListener("click",()=>loadRule34(true));
-    el("rule34ClearBtn")?.addEventListener("click",()=>{ const g=el("rule34Gallery"); if(g){g.querySelectorAll("video,img").forEach(e2=>mediaObserver.unobserve(e2));g.innerHTML="";} booruState.rule34=makeBooruState(); booruModalItems.rule34=[]; el("rule34LoadMore")?.classList.add("hidden"); showToast("Rule34 cleared","info"); });
+    el("rule34ClearBtn")?.addEventListener("click",()=>{ const g=el("rule34Gallery"); if(g){g.querySelectorAll("video,img,iframe").forEach(e2=>mediaObserver.unobserve(e2));g.innerHTML="";} booruState.rule34=makeBooruState(); booruModalItems.rule34=[]; el("rule34LoadMore")?.classList.add("hidden"); showToast("Rule34 cleared","info"); });
     el("rule34Tags")?.addEventListener("keydown",e=>{ if(e.key==="Enter")loadRule34(true); });
 
     // Save All Visible buttons
@@ -2139,12 +2142,13 @@ async function init(){
         showToast("DB error: "+e.message,"error",8000);
     }
 }
-init();
+// init() is called at the END of the file so all appended let declarations
+// are initialized before init() runs (avoids Temporal Dead Zone errors).
 
 // ════════════════════════════════════════════════════════
 // SERVICE WORKER REGISTRATION
 // ════════════════════════════════════════════════════════
-if ('serviceWorker' in navigator) {
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('sw.js').catch(() => {});
     });
@@ -2267,11 +2271,12 @@ async function loadKemono(reset=true) {
 function initKemono() {
     booruModalItems.kemono=[];
     el('kemonoLoadBtn')?.addEventListener('click',()=>loadKemono(true));
-    el('kemonomClearBtn')?.addEventListener('click',()=>{ const g=el('kemonoGallery');if(g)g.innerHTML=''; kemonoState={...kemonoState,offset:0,done:false,shownIds:new Set(),items:[]}; booruModalItems.kemono=[]; el('kemonoLoadMore')?.classList.add('hidden'); });
+    el('kemonoClearBtn')?.addEventListener('click',()=>{ const g=el('kemonoGallery');if(g){g.querySelectorAll('video,img,iframe').forEach(e2=>mediaObserver.unobserve(e2));g.innerHTML='';}; kemonoState={...kemonoState,offset:0,done:false,shownIds:new Set(),items:[]}; booruModalItems.kemono=[]; el('kemonoLoadMore')?.classList.add('hidden'); });
     el('kemonoLoadMoreBtn')?.addEventListener('click',()=>loadKemono(false));
     el('kemonoQuery')?.addEventListener('keydown',e=>{if(e.key==='Enter')loadKemono(true);});
     el('kemonoSaveAllBtn')?.addEventListener('click',async()=>{ if(!kemonoState.items.length){showToast('Nothing to save','error');return;} const added=await addGifsToDB(kemonoState.items.map(p=>p.url),'kemono'); gifs=await getAllGifs();buildFuseIndex();applyFilters();showToast(`Saved ${added}`,'success',3000); });
-    makeIntersect(()=>loadKemono(false),'kemonoLoadMore');
+    // Inline load-more observer (makeIntersect is scoped inside initBooruControls)
+    (()=>{ const s=el('kemonoLoadMore'); if(s) new IntersectionObserver(e=>{if(e[0].isIntersecting)loadKemono(false);},{rootMargin:'300px'}).observe(s); })();
 }
 
 // ════════════════════════════════════════════════════════
@@ -2332,11 +2337,11 @@ async function loadCoomer(reset=true) {
 function initCoomer() {
     booruModalItems.coomer=[];
     el('coomerLoadBtn')?.addEventListener('click',()=>loadCoomer(true));
-    el('coomerClearBtn')?.addEventListener('click',()=>{ const g=el('coomerGallery');if(g)g.innerHTML=''; coomerState={...coomerState,offset:0,done:false,shownIds:new Set(),items:[]}; booruModalItems.coomer=[]; el('coomerLoadMore')?.classList.add('hidden'); });
+    el('coomerClearBtn')?.addEventListener('click',()=>{ const g=el('coomerGallery');if(g){g.querySelectorAll('video,img,iframe').forEach(e2=>mediaObserver.unobserve(e2));g.innerHTML='';}; coomerState={...coomerState,offset:0,done:false,shownIds:new Set(),items:[]}; booruModalItems.coomer=[]; el('coomerLoadMore')?.classList.add('hidden'); });
     el('coomerLoadMoreBtn')?.addEventListener('click',()=>loadCoomer(false));
     el('coomerQuery')?.addEventListener('keydown',e=>{if(e.key==='Enter')loadCoomer(true);});
     el('coomerSaveAllBtn')?.addEventListener('click',async()=>{ if(!coomerState.items.length){showToast('Nothing to save','error');return;} const added=await addGifsToDB(coomerState.items.map(p=>p.url),'coomer'); gifs=await getAllGifs();buildFuseIndex();applyFilters();showToast(`Saved ${added}`,'success',3000); });
-    makeIntersect(()=>loadCoomer(false),'coomerLoadMore');
+    (()=>{ const s=el('coomerLoadMore'); if(s) new IntersectionObserver(e=>{if(e[0].isIntersecting)loadCoomer(false);},{rootMargin:'300px'}).observe(s); })();
 }
 
 // ════════════════════════════════════════════════════════
@@ -2414,13 +2419,14 @@ function initNijie() {
         nijieLogin(em, pw);
     });
     el('nijieLoadBtn')?.addEventListener('click',()=>loadNijie(true));
-    el('nijieClearBtn')?.addEventListener('click',()=>{ const g=el('nijieGallery');if(g)g.innerHTML=''; nijieState={...nijieState,page:1,done:false,shownIds:new Set(),items:[]}; booruModalItems.nijie=[]; el('nijieLoadMore')?.classList.add('hidden'); });
+    el('nijieClearBtn')?.addEventListener('click',()=>{ const g=el('nijieGallery');if(g){g.querySelectorAll('video,img,iframe').forEach(e2=>mediaObserver.unobserve(e2));g.innerHTML='';}; nijieState={...nijieState,page:1,done:false,shownIds:new Set(),items:[]}; booruModalItems.nijie=[]; el('nijieLoadMore')?.classList.add('hidden'); });
     el('nijieLoadMoreBtn')?.addEventListener('click',()=>loadNijie(false));
     el('nijieQuery')?.addEventListener('keydown',e=>{if(e.key==='Enter')loadNijie(true);});
     el('nijieSaveAllBtn')?.addEventListener('click',async()=>{ if(!nijieState.items.length){showToast('Nothing to save','error');return;} const added=await addGifsToDB(nijieState.items.map(p=>p.url),'nijie'); gifs=await getAllGifs();buildFuseIndex();applyFilters();showToast(`Saved ${added}`,'success',3000); });
-    makeIntersect(()=>loadNijie(false),'nijieLoadMore');
+    (()=>{ const s=el('nijieLoadMore'); if(s) new IntersectionObserver(e=>{if(e[0].isIntersecting)loadNijie(false);},{rootMargin:'300px'}).observe(s); })();
     // Restore saved email
-    const saved = localStorage.getItem('nijie_email'); if(saved){const el2=el('nijieEmail');if(el2)el2.value=saved;}
+    const savedEmail = localStorage.getItem('nijie_email');
+    if (savedEmail) { const eEl=el('nijieEmail'); if(eEl) eEl.value=savedEmail; }
 }
 
 // ════════════════════════════════════════════════════════
@@ -2586,11 +2592,16 @@ function preloadAhead(items, currentIdx, count=4) {
 // Vault already paginates; this adds auto-reveal via sentinel
 // ════════════════════════════════════════════════════════
 function initVirtualScroll() {
-    const sentinel=document.createElement('div'); sentinel.id='vaultSentinel';
-    sentinel.style.cssText='height:1px;width:100%;';
-    gallery?.parentNode?.insertBefore(sentinel, gallery.nextSibling);
-    new IntersectionObserver(entries=>{
-        if(entries[0].isIntersecting && rendered < filtered.length) renderGallery(false);
-    },{rootMargin:'400px 0px',threshold:0}).observe(sentinel);
+    // Vault already uses IntersectionObserver-driven progressive loading.
+    // This is a safe stub — full virtual scroll deferred until vault refactor.
+    try {
+        const sentinel = document.createElement('div');
+        sentinel.id = 'vaultSentinel';
+        sentinel.style.cssText = 'height:1px;width:100%;pointer-events:none;';
+        if (gallery && gallery.parentNode) {
+            gallery.parentNode.insertBefore(sentinel, gallery.nextSibling);
+        }
+    } catch(e) { /* non-critical */ }
 }
 
+init();
